@@ -1,8 +1,9 @@
 from urllib.parse import urlencode
 import json
 
-# import requests
-import sublime_requests as requests
+import requests
+# import sublime_requests as requests
+
 
 def get_class(str_or_class):
     """Accept a name or actual class object for a class in the current module.
@@ -260,8 +261,8 @@ class LazyTrello(object):
             raise AttributeError("%r object has no attribute %r" %
                                  (type(self).__name__, attr))
 
-    def __unicode__(self):
-        tmpl = u'<%(cls)s: %(name_or_id)s>'
+    def __str__(self):
+        tmpl = '<%(cls)s: %(name_or_id)s>'
         # If I have a name, use that
         if 'name' in self._data:
             return tmpl % {'cls': self.__class__.__name__,
@@ -270,11 +271,8 @@ class LazyTrello(object):
         return tmpl % {'cls': self.__class__.__name__,
                        'name_or_id': self._id}
 
-    def __str__(self):
-        return str(self.__unicode__())
-
     def __repr__(self):
-        return str(self.__unicode__())
+        return self.__str__()
 
     def reload(self):
         self.__dict__.pop("_data", None)
@@ -359,6 +357,14 @@ class Card(LazyTrello, Closable, Deletable, Labeled):
                            'key': self._conn.key, 'token': self._conn.token})
         return self._conn.put(path, body=body)
 
+    def attachments(self):
+        path = self._path + '/attachments'
+        response = self._conn.get(path, dict(fields='url'))
+        attachements_json = json.loads(response)
+        _attachments = attachements_json
+        return _attachments
+
+
 class Checklist(LazyTrello):
 
     _prefix = '/checklists/'
@@ -406,6 +412,7 @@ class List(LazyTrello, Closable):
         List.board = ObjectField('idBoard', 'Board')
         List.cards = SubList('Card')
 
+
 class Member(LazyTrello):
 
     _prefix = '/members/'
@@ -419,7 +426,7 @@ class Member(LazyTrello):
     cards = SubList('Card')
     notifications = SubList('Notification')
     organizations = SubList('Organization')
-    
+
     # TODO: Generalize this pattern, add it to a base class, and make it work
     # correctly with SubList. Until then....
     def add_board(self, name, organization=None, prefs_permissionLevel="private"):
@@ -448,7 +455,7 @@ class Notification(LazyTrello):
     type = Field('type')
     unread = Field()
 
-    creator = ObjectField('idMemberCreator', 'Member') 
+    creator = ObjectField('idMemberCreator', 'Member')
 
     def unread(self, member):
         path = member._path + self._prefix

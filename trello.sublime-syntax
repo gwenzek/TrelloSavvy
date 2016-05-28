@@ -1,0 +1,14 @@
+%YAML 1.2
+---
+name: Trello
+file_extensions: .txt
+scope: text.trello
+
+
+variables:
+
+
+contexts:
+  main:
+    - match: '#+'
+      scope: punctuation
