@@ -52,4 +52,5 @@ def main():
 
 # ui.render_board(board, 'board.txt')
 
-main()
+if __name__ == '__main__':
+    main()

@@ -1,1 +1,6 @@
 /trello_token.txt
+/cards/
+
+__pycache__/
+*.pyc
+

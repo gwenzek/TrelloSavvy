@@ -141,13 +141,18 @@ class Field(object):
     object's _data dict.
     """
 
-    def __init__(self, key=None):
+    def __init__(self, key, mapper=None):
         self.key = key
+        self.mapper = mapper
 
     def __get__(self, instance, owner):
         # Accessing instance._data will trigger a fetch from Trello if the
         # _data attribute isn't already present.
-        return instance._data[self.key]
+        x = instance._data[self.key]
+        if self.mapper is None:
+            return x
+        else:
+            return self.mapper(x)
 
 
 class DateField(Field):
@@ -283,9 +288,9 @@ class LazyTrello(object):
 class Action(LazyTrello):
 
     _prefix = '/actions/'
-    data = Field()
-    type = Field()
-    date = DateField()
+    # data = Field()
+    # type = Field()
+    # date = DateField()
     creator = ObjectField('idMemberCreator', 'Member')
 
 
@@ -295,9 +300,9 @@ class Board(LazyTrello, Closable):
 
     url = Field('url')
     name = Field('name')
-    pinned = Field()
-    prefs = Field()
-    desc = Field()
+    boardStars = Field('boardStars')
+    myPrefs = Field('myPrefs')
+    desc = Field('desc')
     closed = Field('closed')
 
     organization = ObjectField('idOrganization', 'Organization')
@@ -329,9 +334,9 @@ class Card(LazyTrello, Closable, Deletable, Labeled):
     closed = Field('closed')
     name = Field('name')
     badges = Field('badges')
-    checkItemStates = Field()
+    # checkItemStates = ListField('checkItemStates')
     desc = Field('desc')
-    labels = Field("labels")
+    labels = Field('labels')
 
     board = ObjectField('idBoard', 'Board')
     list = ObjectField('idList', 'List')
@@ -370,7 +375,7 @@ class Checklist(LazyTrello):
     _prefix = '/checklists/'
 
     checkItems = SubList('CheckItem')
-    name = Field()
+    name = Field('name')
     board = ObjectField('idBoard', 'Board')
     cards = SubList('Card')
 
@@ -384,9 +389,9 @@ class CheckItem(LazyTrello):
 
     _prefix = '/checkItems/'
 
-    name = Field()
-    pos = Field()
-    type = Field()
+    name = Field('name')
+    pos = Field('pos')
+    checked = Field('state', lambda state: state == 'complete')
 
 class List(LazyTrello, Closable):
 
@@ -451,9 +456,9 @@ class Notification(LazyTrello):
     _prefix = '/notifications/'
 
     data = Field('data')
-    date = DateField()
+    date = DateField('date')
     type = Field('type')
-    unread = Field()
+    unread = Field('unread')
 
     creator = ObjectField('idMemberCreator', 'Member')
 
@@ -474,10 +479,10 @@ class Organization(LazyTrello):
 
     _prefix = '/organizations/'
 
-    url = Field()
-    desc = Field()
+    url = Field('url')
+    desc = Field('desc')
     displayname = Field('displayName')
-    name = Field()
+    name = Field('name')
 
     actions = SubList('Action')
     boards = SubList('Board')
