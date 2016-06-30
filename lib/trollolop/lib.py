@@ -30,7 +30,7 @@ class TrelloConnection(object):
         params = params or {}
         params.update({'key': self.key, 'token': self.token})
         url += '?' + urlencode(params)
-
+        print('getting ' + url)
         # Trello recently got picky about headers.  Only set content type if
         # we're submitting a payload in the body
         if body:
