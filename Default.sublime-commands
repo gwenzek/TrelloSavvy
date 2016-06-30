@@ -1,0 +1,7 @@
+[
+  {
+    "id": "trellosavvyopenboard",
+    "caption": "TrelloSavvy: Open board",
+    "command": "tsavvy_open_board"
+  }
+]
