@@ -2,6 +2,8 @@ import sublime
 import sublime_plugin
 
 from .lib.trollolop import TrelloConnection
+from .src import inline_ui as ui
+from os import path
 
 
 class TsavvyOpenBoardCommand(sublime_plugin.WindowCommand):
@@ -13,7 +15,13 @@ class TsavvyOpenBoardCommand(sublime_plugin.WindowCommand):
             return
 
         self.api = TrelloConnection(self.key, self.token)
-        print(self.api.get_member("me").boards)
+        boards = self.api.get_member("me").boards
+        print(boards)
+        self.window.show_quick_panel(
+            items = [board.name for board in boards],
+            on_select = lambda i: self.select_entry(boards[i]),
+            flags = sublime.KEEP_OPEN_ON_FOCUS_LOST
+        )
 
     def setup_data_from_settings(self):
         user_settings = sublime.load_settings("TrelloSavvy.sublime-settings")
@@ -26,6 +34,7 @@ class TsavvyOpenBoardCommand(sublime_plugin.WindowCommand):
         self.results_in_new_tab = user_settings.get("results_in_new_tab", True)
         self.card_delimiter = user_settings.get("card_delimiter", "<end>")
         self.syntax_file = user_settings.get("syntax_file")
+        self.boards_directory = user_settings.get("boards_directory", "~/Desktop")
 
     def help_text(self):
         self.show_output_panel("No token found in the setting file.")
@@ -44,3 +53,11 @@ class TsavvyOpenBoardCommand(sublime_plugin.WindowCommand):
     def set_new_view_attributes(self, view):
         # view.set_syntax_file(self.syntax_file)
         view.set_viewport_position((0, 0), True)
+
+    def select_entry(self, board):
+        print(board, board._id, board.name)
+        b = self.api.get_board(board._id)
+        board_path = path.join(self.boards_directory, b._id + '.trello')
+
+        self.window.open_file(board_path)
+        sublime.set_timeout_async(lambda: ui.write_board_file(b, board_path), 0)

@@ -1,9 +1,18 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from codecs import open
+from os import path, mkdir
 
 LIST_SEP = '----------------'
 INDENT = 2
 
-def render_board(board, file):
+def write_board_file(board, file, render_cards=False):
+    print('printing at', file)
+    card_path = path.join(path.dirname(file), 'cards')
+    if not path.exists(card_path):
+        mkdir(card_path)
+
     with open(file, 'w', 'utf-8') as o:
 
         level = 0
@@ -24,10 +33,8 @@ def render_board(board, file):
                 print_lines([''])
 
             for card in l.cards:
-                with open('cards/%s.txt' % card._id, 'w') as c:
-                    for line in render_full_card_details(card):
-                        c.write(line)
-                        c.write('\n')
+                if render_cards:
+                    write_card_file(path.join(card_path, '%s.txt' % card._id))
 
                 level = 1
                 print_lines(render_card_title(card))
@@ -35,6 +42,11 @@ def render_board(board, file):
                 print_lines(render_card_details(card))
                 print_lines([''])
 
+def write_card_file(card, file):
+    with open(file, 'w') as c:
+        for line in render_full_card_details(card):
+            c.write(line)
+            c.write('\n')
 
 def render_card_title(card):
     print('rendering', card)
@@ -173,8 +185,3 @@ def render_label(label, short=False):
 
 def load_cache():
     pass
-
-
-if __name__ == '__main__':
-    import trello
-    trello.main()
