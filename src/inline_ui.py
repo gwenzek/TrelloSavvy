@@ -130,6 +130,7 @@ def render_full_card_details(card):
 
 def render_list_title(l):
     yield LIST_SEP
+    yield '<%s>' % l._id
     title = l.name.replace('\n', ' ')
     yield title
     yield '%d cards' % len(l.cards)

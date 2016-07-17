@@ -15,6 +15,8 @@ contexts:
       push: list_title
 
   list_title:
+    - match: '^(<)([a-z0-9]+)(>)'
+      scope: comment.other.id.list.trello
     - match: '^\s*(.*)'
       captures:
         1: entity.name.type.list.trello
@@ -29,11 +31,12 @@ contexts:
         1: constant.numeric.trello
 
   list:
+    - meta_scope: meta.section.list.trello
     - match: '{{list_ahead}}'
       pop: true
 
     - match: '^  (<)([a-z0-9]+)(>)'
-      scope: comment.line.trello
+      scope: comment.other.id.card.trello
       push: card_title
 
   card_title:

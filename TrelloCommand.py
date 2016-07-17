@@ -4,6 +4,7 @@ import sublime_plugin
 from .lib.trollolop import TrelloConnection
 from .src import inline_ui as ui
 from os import path
+from codecs import open
 
 
 class TsavvyOpenBoardCommand(sublime_plugin.WindowCommand):
@@ -30,10 +31,7 @@ class TsavvyOpenBoardCommand(sublime_plugin.WindowCommand):
         self.secret = user_settings.get("secret")
         self.token  = user_settings.get("token")
         self.use_cache = user_settings.get("use_cache", True)
-        self.renavigate = user_settings.get("keep_navigate_open_after_action", True)
-        self.results_in_new_tab = user_settings.get("results_in_new_tab", True)
-        self.card_delimiter = user_settings.get("card_delimiter", "<end>")
-        self.syntax_file = user_settings.get("syntax_file")
+        self.indent = user_settings.get("indent", 2)
         self.boards_directory = user_settings.get("boards_directory", "~/Desktop")
 
     def help_text(self):
@@ -59,5 +57,75 @@ class TsavvyOpenBoardCommand(sublime_plugin.WindowCommand):
         b = self.api.get_board(board._id)
         board_path = path.join(self.boards_directory, b._id + '.trello')
 
-        self.window.open_file(board_path)
-        sublime.set_timeout_async(lambda: ui.write_board_file(b, board_path), 0)
+        view = self.window.open_file(board_path)
+        view.set_syntax_file('Packages/TrelloSavvy/trello.sublime-syntax')
+
+        sublime.set_timeout_async(lambda: self.edit_board_file(view, b), 0)
+
+    def edit_board_file(self, view, board):
+
+        file = view.file_name()
+        cards = {}
+        with open(file, 'w', 'utf-8') as o:
+
+            level = 0
+            indent = self.indent
+            def print_lines(x):
+                for line in x:
+                    if line == '':
+                        o.write('\n')
+                    else:
+                        o.write(' ' * (level * indent))
+                        o.write(line)
+                        o.write('\n')
+
+            for l in board.lists:
+                level = 0
+                print_lines(ui.render_list_title(l))
+
+                if len(l.cards) == 0:
+                    print_lines([''])
+
+                for card in l.cards:
+                    level = 1
+                    print_lines(ui.render_card_title(card))
+                    level = 2
+                    # print_lines(ui.render_card_details(card))
+                    cards[card._id] = card
+                    print_lines(['refreshing ' + card._id])
+                    print_lines([''])
+
+        view = self.window.open_file(file)
+        details_indent = ' ' * (self.indent * 2)
+        i = 0
+        refreshing_regex = r'^%srefreshing [a-z0-9]+$' % details_indent
+        region = view.find(refreshing_regex, 0)
+        while region is not None and region.a > -1:
+            id = view.substr(region).split()[-1]
+            details = list(ui.render_card_details(cards[id]))
+            if len(details) > 0:
+                details = '\n'.join(map(lambda d: details_indent + d, details))
+                print('calling ts_replace_region')
+                view.run_command('ts_replace_region', args=dict(text=details, begin=region.begin(), end=region.end()))
+
+            region = view.find(refreshing_regex, region.end())
+
+        sublime.set_timeout_async(lambda: view.run_command('save'), 1000)
+
+
+def extract_id(view, region):
+    row, col = view.rowcol(region.begin())
+    return view.substr(view.line(view.text_point(row - 1, col))).strip()[1:-1]
+
+
+class TsReplaceRegionCommand(sublime_plugin.TextCommand):
+
+    """
+    Replace the contents of a region within the view with the provided text.
+    """
+
+    def run(self, edit, text, begin, end):
+        is_read_only = self.view.is_read_only()
+        self.view.set_read_only(False)
+        self.view.replace(edit, sublime.Region(begin, end), text)
+        self.view.set_read_only(is_read_only)
