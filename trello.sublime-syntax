@@ -1,14 +1,118 @@
 %YAML 1.2
 ---
 name: Trello
-file_extensions: .txt
+file_extensions: .trello
 scope: text.trello
 
 
 variables:
-
+   list_ahead: ^(?=-{3,})
 
 contexts:
   main:
-    - match: '#+'
+    - match: '^-{3,}'
+      scope: punctuation.separator.list.trello
+      push: list_title
+
+  list_title:
+    - match: '^\s*(.*)'
+      captures:
+        1: entity.name.type.list.trello
+      set: list_details
+
+  list_details:
+    - match: '^-{3,}'
       scope: punctuation
+      set: list
+    - match: (\d+) (cards?)
+      captures:
+        1: constant.numeric.trello
+
+  list:
+    - match: '{{list_ahead}}'
+      pop: true
+
+    - match: '^  (<)([a-z0-9]+)(>)'
+      scope: comment.line.trello
+      push: card_title
+
+  card_title:
+    - match: '  .*'
+      scope: entity.name.function.card.trello
+      set: card_details
+
+  card_details:
+    - match: ','
+      scope: punctuation.separator.trello
+    - match: ≡|💬|📎
+      scope: constant.character.trello
+    - match: \d+
+      scope: constant.numeric.trello
+
+    - match: '@[^\s,]+'
+      scope: entity.name.tag.member.trello
+
+
+    - match: '(\[✓\]) (\d+)/(\d+)'
+      captures:
+        1: constant.character.trello
+        2: constant.numeric.trello
+        3: constant.numeric.trello
+
+    - match: '(\[✔\]) (\d+)/(\d+)'
+      captures:
+        0: markup.bold.trello
+        1: constant.character.trello
+        2: constant.numeric.trello
+        3: constant.numeric.trello
+
+
+    - match: '<?\*+\s*(.*?)\s*\*>?'
+      captures:
+        0: markup.background.green.trello
+        1: entity.name.tag.label.trello
+
+    - match: '<?!+\s*(.*?)\s*!>?'
+      captures:
+        0: markup.background.red.trello
+        1: entity.name.tag.label.trello
+
+    - match: '<?\?+\s*(.*?)\s*\?>?'
+      captures:
+        0: markup.background.blue.trello
+        1: entity.name.tag.label.trello
+
+    - match: '<?~+\s*(.*?)\s*~>?'
+      captures:
+        0: markup.background.yellow.trello
+        1: entity.name.tag.label.trello
+
+    - match: '<?&+\s*(.*?)\s*&>?'
+      captures:
+        0: markup.background.sky.trello
+        1: entity.name.tag.label.trello
+
+    - match: '<?\$+\s*(.*?)\s*\$>?'
+      captures:
+        0: markup.background.purple.trello
+        1: entity.name.tag.label.trello
+
+    - match: '<?#+\s*(.*?)\s*#>?'
+      captures:
+        0: markup.background.black.trello
+        1: entity.name.tag.label.trello
+
+    - match: '<?%+\s*(.*?)\s*%>?'
+      captures:
+        0: markup.background.pink.trello
+        1: entity.name.tag.label.trello
+
+    - match: '<?§+\s*(.*?)\s*§>?'
+      captures:
+        0: markup.background.orange.trello
+        1: entity.name.tag.label.trello
+
+    - match: '^(?=  <[a-z0-9]+>)'
+      pop: true
+    - match: '{{list_ahead}}'
+      pop: true
